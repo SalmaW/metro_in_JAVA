@@ -27,15 +27,16 @@ public class Main {
     ));
 
     static ArrayList<String> line3new = new ArrayList<>(Arrays.asList(
-            "tawfikia", "wadi el nile", "gamet el dowel", "boulak el dakrour",
+            "kit kat", "tawfikia", "wadi el nile", "gamet el dowel", "boulak el dakrour",
             "cairo university"
     ));
-    static String direction1 = "El-Marg";
-    static String direction2 = "Shobra";
-    static String direction3 = "Rod El-Farag Corr.";
-
     static String startStation = "";
     static String endStation = "";
+    static int count;
+    static String interchangeStation1, interchangeStation2;
+    static int startLine;
+    static int endLine;
+    static ArrayList<String> startLineName;
 
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
@@ -66,7 +67,7 @@ public class Main {
                 System.out.println("PLEASE ENTER AGAIN\n");
             }
         }
-        int count = 0;
+        count = 0;
 
         // Check if start and end stations are on the same physical line
         Set<Integer> commonLines = new HashSet<>(startLines);
@@ -74,27 +75,34 @@ public class Main {
 
         if (!commonLines.isEmpty()) {
             int commonLine = commonLines.iterator().next();
-            getDirection();
+            getNewDirection(startStation, endStation);
             System.out.println("Take Line " + commonLine + " from " + startStation.toUpperCase() + " to " + endStation.toUpperCase());
             printStations(startStation, endStation, commonLine);
             count = routeStations.size();
         } else {
-            int startLine = startLines.get(0);
-            int endLine = endLines.get(0);
-            ArrayList<String> startLineName = getLineName(startLine);
+            startLine = startLines.get(startLines.size() - 1);
+            endLine = endLines.get(endLines.size() - 1);
+            startLineName = getLineName(startLine);
 
-            String interchangeStation = getInterchangeStation(startLine, endLine, startStation, startLineName);
+            System.out.println(startLines + "       hghghghghghg     " + endLines);
 
-            getDirection();
-            System.out.println("Take Line " + startLine + " from -" + startStation.toUpperCase() + "- to -" + interchangeStation.toUpperCase() + "- :");
-            printStations(startStation, interchangeStation, startLine);
+            if ((startLine == 1 || endLine == 1) && (startLine == 4 || endLine == 4)) {
+                handlingLines1and4(startLine, endLine, startStation, endStation);
+                return;
+            }
+            interchangeStation1 = getInterchangeStation(startLine, endLine, startStation, startLineName);
+
+            getNewDirection(startStation, interchangeStation1);
+            System.out.println("Take Line " + startLine + " from -" + startStation.toUpperCase() + "- to -" + interchangeStation1.toUpperCase() + "- :");
+            printStations(startStation, interchangeStation1, startLine);
+            System.out.println("\n");
+
+            getNewDirection(interchangeStation1, endStation);
+            System.out.println("\nChange to Line " + endLine + " and from -" + interchangeStation1.toUpperCase() + "- to -" + endStation.toUpperCase() + "- :");
+            printStations(interchangeStation1, endStation, endLine);
             System.out.println(" ");
-            System.out.println("\nChange to Line " + endLine + " and from -" + interchangeStation.toUpperCase() + "- to -" + endStation.toUpperCase() + "- :");
-            printStations(interchangeStation, endStation, endLine);
-            System.out.println(" ");
-            count = routeStations.size() - 1;
+            count = removeDuplicates(routeStations).size();
         }
-
 
         System.out.println("\nNumber Of Stations: " + count);
         int price = getPrice(count);
@@ -112,11 +120,23 @@ public class Main {
                 min = path.size();
                 shortIndex = allPaths.indexOf(path);
             }
-            System.out.println(path + "\n" + "Price is: " + getPrice(count));
+            System.out.println(path + "\n");
         }
         System.out.println("\nShortest Route: " + allPaths.get(shortIndex));
 
 
+    }
+
+    public static <T> ArrayList<T> removeDuplicates(ArrayList<T> list) {
+        ArrayList<T> newList = new ArrayList<T>();
+
+        // Traverse through the first list
+        for (T element : list) {
+            if (!newList.contains(element)) {
+                newList.add(element);
+            }
+        }
+        return newList;
     }
 
     public static List<Integer> findLines(String station) {
@@ -127,27 +147,30 @@ public class Main {
         if (line2.contains(station)) {
             lines.add(2);
         }
-        if (line3.contains(station) || line3new.contains(station)) {
+        if (line3.contains(station)) {
             lines.add(3);
+        }
+        if (line3new.contains(station)) {
+            lines.add(4);
         }
         return lines;  // Return all lines containing the station
     }
 
-    public static String shortestPath(int startLine, int endLine, String startStation, ArrayList<String> startLineName) {
+    public static String interchangeOfLine1(int startLine, int endLine, String startStation, ArrayList<String> startLineName) {
         String interchangeStation = "sadat";
 
-        if ((startLine == 1 && endLine == 2) || (startLine == 2 && endLine == 1)) {
-            int startStationIndex = startLineName.indexOf(startStation);
-            int shohadaIndex = startLineName.indexOf("al shohadaa");
 
-            int interchangeStation1 = Math.abs(startStationIndex - shohadaIndex);
-            int sadatIndex = startLineName.indexOf("sadat");
-            int interchangeStation2 = Math.abs(startStationIndex - sadatIndex);
+        int startStationIndex = startLineName.indexOf(startStation);
+        int shohadaIndex = startLineName.indexOf("al shohadaa");
+        int interchangeStation1 = Math.abs(startStationIndex - shohadaIndex);
 
-            if (interchangeStation1 < interchangeStation2) {
-                interchangeStation = "al shohadaa";
-            }
+        int sadatIndex = startLineName.indexOf("sadat");
+        int interchangeStation2 = Math.abs(startStationIndex - sadatIndex);
+
+        if (interchangeStation1 < interchangeStation2) {
+            interchangeStation = "al shohadaa";
         }
+
         return interchangeStation;
     }
 
@@ -155,14 +178,69 @@ public class Main {
         // Interchange stations for each line
         String interchangeStations = "";
         if ((startLine == 1 || endLine == 1) && (startLine == 2 || endLine == 2)) {
-            interchangeStations = shortestPath(startLine, endLine, startStation, startLineName);//1&2
+            interchangeStations = interchangeOfLine1(startLine, endLine, startStation, startLineName);//1&2
+        } else if ((startLine == 2 || endLine == 2) && (startLine == 4 || endLine == 4)) {
+            interchangeStations = "cairo university";//2&4
         } else if ((startLine == 2 || endLine == 2) && (startLine == 3 || endLine == 3)) {
             interchangeStations = "ataba";//2&3
         } else if ((startLine == 1 || endLine == 1) && (startLine == 3 || endLine == 3)) {
-            interchangeStations = "nasser";//1&3
+            interchangeStations = "nasser";// 1&3
+        } else if ((startLine == 3 || endLine == 3) && (startLine == 4 || endLine == 4)) {
+            interchangeStations = "kit kat";// 3&4
         }
 
         return interchangeStations;
+    }
+
+
+    public static void handlingLines1and4(int startLine, int endLine, String startStation, String endStation) {
+        interchangeStation1 = getInterchangeStation(startLine, 3, startStation, startLineName);
+        interchangeStation2 = getInterchangeStation(3, endLine, interchangeStation1, startLineName);
+
+        getNewDirection(startStation, interchangeStation1);
+        System.out.println("Take Line " + startLine + " from -" + startStation.toUpperCase() + "- to -" + interchangeStation1.toUpperCase() + "- :");
+        printStations(startStation, interchangeStation1, startLine);
+        System.out.println("\n");
+        //1 -> 4
+        printStations(interchangeStation1, interchangeStation2, 3);
+
+        System.out.println("\n");
+
+        getNewDirection(interchangeStation2, endStation);
+        System.out.println("Take Line " + interchangeStation2 + " from -" + interchangeStation2.toUpperCase() + "- to -" + endStation.toUpperCase() + "- :");
+        printStations(interchangeStation2, endStation, endLine);
+        System.out.println(" ");
+
+        count = removeDuplicates(routeStations).size();
+        System.out.println("\nNumber Of Stations: " + count);
+        int price = getPrice(count);
+        System.out.println("Price: " + price + " EGP");
+        calculateEstimatedTime(count);
+
+        // Find all paths
+        List<List<String>> allPaths = findAllPaths(startStation, endStation);
+        System.out.println("\nAll possible paths from " + startStation.toUpperCase() + " to " + endStation.toUpperCase() + ":");
+        int min = allPaths.get(0).size();
+        int shortIndex = 0;
+        for (List<String> path : allPaths) {
+            count = path.size();
+            if (path.size() < min) {
+                min = path.size();
+                shortIndex = allPaths.indexOf(path);
+            }
+            System.out.println(path + "\n");
+        }
+        System.out.println("\nShortest Route: " + allPaths.get(shortIndex));
+    }
+
+    public static List<String> findCommonStations(List<String> line1, List<String> line2) {
+        List<String> commonStations = new ArrayList<>();
+        for (String station : line1) {
+            if (line2.contains(station)) {
+                commonStations.add(station);
+            }
+        }
+        return commonStations;
     }
 
     public static ArrayList<String> getLineName(int line) {
@@ -173,76 +251,44 @@ public class Main {
                 return line2;
             case 3:
                 return line3;
+            case 4:
+                return line3new;
             default:
                 return null;
         }
     }
 
-    static void getDirection() {
-        if (line1.contains(startStation) && line1.contains(endStation)) {
-            if (line1.indexOf(startStation) > line1.indexOf(endStation)) {
-                direction1 = "Helwan";
-            }
-            System.out.println("Direction of Line 1: " + direction1);
-        } else if (line2.contains(startStation) && line2.contains(endStation)) {
-            if (line2.indexOf(startStation) > line2.indexOf(endStation)) {
-                direction2 = "El-Mounib";
-            }
-            System.out.println("Direction of Line 2: " + direction2);
-        } else if (line3.contains(startStation) && line3.contains(endStation)) {
-            if (line3.indexOf(startStation) > line3.indexOf(endStation)) {
-                direction3 = "Adly Mansour";
-            }
-            System.out.println("Direction of Line 3: " + direction3);
-        } else if (line1.contains(startStation) && line2.contains(endStation)) {
-            if (line1.indexOf(startStation) > line1.indexOf("al shohadaa")) {
-                direction1 = "Helwan";
-            }
-            if (line2.indexOf(endStation) < line2.indexOf("al shohadaa")) {
-                direction2 = "El-Mounib";
-            }
-            System.out.println("^^Direction of Line 1: " + direction1 + "   Direction of Line 2: " + direction2);
-        } else if (line2.contains(startStation) && line1.contains(endStation)) {
-            if (line2.indexOf(startStation) > line2.indexOf("al shohadaa")) {
-                direction2 = "El-Mounib";
-            }
-            if (line1.indexOf(endStation) < line1.indexOf("al shohadaa")) {
-                direction1 = "Helwan";
-            }
-            System.out.println("^^Direction of Line 2: " + direction2 + "   Direction of Line 1: " + direction1);
-        } else if (line1.contains(startStation) && line3.contains(endStation)) {
-            if (line1.indexOf(startStation) > line1.indexOf("sadat")) {
-                direction1 = "Helwan";
-            }
-            if (line3.indexOf(endStation) < line3.indexOf("nasser")) {
-                direction3 = "Adly Mansour";
-            }
-            System.out.println("^^Direction of Line 1: " + direction1 + "   Direction of Line 3: " + direction3);
-        } else if (line3.contains(startStation) && line1.contains(endStation)) {
-            if (line3.indexOf(startStation) > line3.indexOf("nasser")) {
-                direction3 = "Adly Mansour";
-            }
-            if (line1.indexOf(endStation) < line1.indexOf("nasser")) {
-                direction1 = "Helwan";
-            }
-            System.out.println("^^Direction of Line 3: " + direction3 + "   Direction of Line 1: " + direction1);
-        } else if (line2.contains(startStation) && line3.contains(endStation)) {
-            if (line2.indexOf(startStation) > line2.indexOf("ataba")) {
-                direction2 = "El-Mounib";
-            }
-            if (line3.indexOf(endStation) < line3.indexOf("ataba")) {
-                direction3 = "Adly Mansour";
-            }
-            System.out.println("^^Direction of Line 2: " + direction2 + "   Direction of Line 3: " + direction3);
-        } else if (line3.contains(startStation) && line2.contains(endStation)) {
-            if (line3.indexOf(startStation) > line3.indexOf("ataba")) {
-                direction3 = "Adly Mansour";
-            }
-            if (line2.indexOf(endStation) < line2.indexOf("ataba")) {
-                direction2 = "El-Mounib";
-            }
-            System.out.println("^^Direction of Line 3: " + direction3 + "   Direction of Line 2: " + direction2);
+
+    /////////the direction of line3new is => adly mansour
+    static void getNewDirection(String startStation, String endStation) {
+//        if (line3new.contains(endStation) && !(line2.contains(endStation)) && !(line3.contains(endStation))) {
+//            System.out.println("Direction: Towards adly mansour");
+//            return;
+//        }
+        // Find lines for start and end stations
+        List<Integer> startLines = findLines(startStation);
+        List<Integer> endLines = findLines(endStation);
+
+        // Check if both stations are on the same line
+        Set<Integer> commonLines = new HashSet<>(startLines);
+        commonLines.retainAll(endLines);
+
+
+        if (!commonLines.isEmpty()) {
+            int line = commonLines.iterator().next(); // Get the common line
+            ArrayList<String> lineStations = getLineName(line);
+
+            int startIndex = lineStations.indexOf(startStation);
+            int endIndex = lineStations.indexOf(endStation);
+
+            String direction = (startIndex < endIndex) ?
+                    "Towards " + lineStations.get(lineStations.size() - 1) :
+                    "Towards " + lineStations.get(0);
+
+            System.out.println("Direction of Line " + line + ": " + direction);
         }
+
+
     }
 
     static void calculateEstimatedTime(int count) {
